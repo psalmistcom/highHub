@@ -1,59 +1,132 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HighHub — School Management Portal
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 12 + Inertia.js + React scaffold for the SMS described in the PRD.
+This is **not** a full Laravel project — it's the app-specific layer meant to be
+copied onto a fresh `laravel new` install, per your instructions.
 
-## About Laravel
+## 1. Setup
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```bash
+composer create-project laravel/laravel highhub
+cd highhub
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+composer require inertiajs/inertia-laravel tightenco/ziggy laravel/breeze --dev
+php artisan breeze:install react   # scaffolds Inertia/React wiring & vite deps, then...
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Breeze will generate its own `AuthenticatedSessionController`, auth views, layouts
+and `app.jsx`. **Overwrite them with the ones in this package** — this package's
+versions are wired for HighHub's roles, nav and design system. Then copy over
+everything else:
 
-## Learning Laravel
+```bash
+# from inside this "highhub" folder, into your fresh laravel install:
+cp -r app/*        ../your-laravel-app/app/
+cp -r database/*   ../your-laravel-app/database/
+cp routes/web.php  ../your-laravel-app/routes/web.php
+cp -r resources/js/*  ../your-laravel-app/resources/js/
+cp resources/css/app.css ../your-laravel-app/resources/css/app.css
+cp tailwind.config.js vite.config.js postcss.config.js package.json ../your-laravel-app/
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Then:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+composer require inertiajs/inertia-laravel tightenco/ziggy   # if not already added
+npm install
+php artisan migrate:fresh --seed
+npm run dev   # or: npm run build
+php artisan serve
+```
 
-## Laravel Sponsors
+Register the role middleware in `bootstrap/app.php` (Laravel 12's new middleware
+registration style):
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias(['role' => \App\Http\Middleware\EnsureUserHasRole::class]);
+})
+```
 
-### Premium Partners
+Demo accounts seeded (`php artisan db:seed`), all with password `password`:
+`admin@highhub.test`, `teacher@highhub.test`, `parent@highhub.test`,
+`student@highhub.test`, `bursar@highhub.test`, `lab@highhub.test`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 2. Architecture
 
-## Contributing
+**Roles**: admin, teacher, student, parent, bursar, lab_attendant — stored as a
+`role` column on `users` (see `App\Enums\RoleEnum`), not a separate table.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**No self-registration.** Only Admins create accounts
+— `UserService::createUser()` is the one place a `User` + role-profile row gets
+made, for every role.
 
-## Code of Conduct
+**Service layer.** Controllers stay thin — validate (via Form Requests), call a
+service, redirect. Business logic (transactions, generating admission numbers,
+computing attendance/fee summaries, report cards) lives in `app/Services/`.
+`StudentController` + `StudentService` is the fully-built reference; the same
+shape applies to every other module.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**RBAC.** Route-level `role:` middleware is the first gate; Policies
+(`app/Policies/`) are the second, so a controller/service called from
+elsewhere (a queued job, an Artisan command, a future API) still enforces the
+same rules. `StudentProfilePolicy` is the fullest example (admin: everything,
+teacher/bursar: read, parent: only their linked children, student: only self).
 
-## Security Vulnerabilities
+## 3. What's fully built vs. scaffolded
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Fully built** (backend + frontend): authentication, role-aware dashboard,
+mobile-responsive shell (sidebar on desktop, bottom tab bar + drawer on
+mobile), and the **Students module** end-to-end (list/search/paginate,
+create, edit, delete) as the reference implementation.
 
-## License
+**Backend complete, frontend forms not yet built**: Teachers, Classes,
+Subjects, Attendance register, Exams/Gradebook/Report cards, Events, Fees
+(structures + invoices + payments), Labs, Messaging. Every model, migration,
+service method, controller action, route and policy exists and is callable
+today (e.g. via Postman or `php artisan tinker`) — what's left is copying the
+Students Create/Edit page pattern for each. This was a deliberate scope call
+given the size of the PRD; happy to build out any specific module's UI next.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Not built — flag for a follow-up pass**: password-reset flow (Breeze
+provides this out of the box, just re-point its views at this design system),
+file/photo uploads (`avatar_path` column exists, no upload UI yet), real-time
+notifications (the `notifications` table + Laravel's notification system is
+wired for email/database channels; broadcasting would need Echo + Pusher/Reverb),
+and CSV/PDF exports for attendance & fee reports.
+
+## 4. Design system — "HighHub"
+
+Brief: a school register, not a generic SaaS dashboard. The signature element
+is the **register rule** — a gold accent bar + hairline pulled from an
+exercise-book margin (`.register-rule` in `app.css`), used on card headers and
+active nav items. Status pills use a **stamp** style (bordered, small-caps,
+rounded) — like a grade stamp on a report card.
+
+| Token                   | Value                                                       | Use |
+| ----------------------- | ----------------------------------------------------------- | --- |
+| `navy-900` `#16234A`    | Primary — trust, formality (sidebar, buttons, headings)     |
+| `gold-500` `#E8A93A`    | Accent — achievement (register-rule, focus rings, progress) |
+| `emerald-500` `#2F9E56` | Present / paid / active                                     |
+| `coral-500` `#DE5B4C`   | Absent / overdue / destructive                              |
+| `paper` `#FAF7F0`       | App background                                              |
+
+Type: **Fraunces** (display, headings only — book-like serif with real
+character), **Plus Jakarta Sans** (UI/body — legible at small sizes on
+phones), **IBM Plex Mono** (admission numbers, scores, stat figures — evokes
+a printed register).
+
+Mobile-first was taken literally: the primary nav _is_ a bottom tab bar on
+phones (students/teachers), not a hamburger-only afterthought — the drawer is
+there for the full menu, but the 4 most-used links are always one thumb-tap
+away.
+
+## 5. Suggestions worth considering for a v2
+
+- **Term/session as a first-class settings record** (current term, current
+  academic year) instead of typing it into every exam/fee form.
+- **Timetable view** — `teacher_class_subject` already has `day_of_week` /
+  `start_time` / `end_time`, just needs a calendar-grid UI.
+- **Parent-teacher messaging restricted per child** (right now any two users
+  can message; you may want to scope it to shared-class relationships).
+- **Audit log** for grade/attendance edits, given these affect a child's record.
