@@ -42,34 +42,6 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
             ],
-            'nav' => fn() => $this->navigation(),
-        ];
-    }
-
-    private function navigation(): array
-    {
-        return [
-            $this->group('Wood Decking', 'wood-decking', WoodDecking::class),
-            $this->group('Wood Cladding', 'wood-cladding', WoodCladding::class),
-            $this->group('Prefabricated Timber', 'prefabricated-timber', PrefabricatedTimber::class),
-            $this->group('Construction Wood', 'construction-wood', ConstructionWood::class),
-        ];
-    }
-
-    private function group(string $label, string $categorySlug, string $modelClass): array
-    {
-        return [
-            'label' => $label,
-            'href' => "/{$categorySlug}",
-            'items' => $modelClass::query()
-                ->select('title', 'slug')
-                ->orderBy('title')
-                ->get()
-                ->map(fn($row) => [
-                    'label' => $row->title,
-                    'href' => "/{$categorySlug}/{$row->slug}",
-                ])
-                ->all(),
         ];
     }
 }
