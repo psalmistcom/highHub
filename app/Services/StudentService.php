@@ -15,6 +15,7 @@ class StudentService
     public function paginate(?string $search = null, ?int $schoolClassId = null, int $perPage = 15): LengthAwarePaginator
     {
         return StudentProfile::query()
+            ->whereHas('user')
             ->with(['user', 'schoolClass'])
             ->when($search, fn(Builder $q) => $q->whereHas(
                 'user',

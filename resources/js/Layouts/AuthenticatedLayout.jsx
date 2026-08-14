@@ -23,6 +23,7 @@ const NAV_BY_ROLE = {
     { label: "Students", href: "students.index", icon: GraduationCap },
     { label: "Teachers", href: "teachers.index", icon: Users },
     { label: "Classes", href: "classes.index", icon: BookOpen },
+    { label: "Exams", href: "exams.index", icon: ClipboardList },
     { label: "Subjects", href: "subjects.index", icon: ClipboardList },
     { label: "Fees", href: "fees.index", icon: Wallet },
     { label: "Events", href: "events.index", icon: CalendarDays },
