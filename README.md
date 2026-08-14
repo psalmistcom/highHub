@@ -1,8 +1,6 @@
 # HighHub — School Management Portal
 
-Laravel 12 + Inertia.js + React scaffold for the SMS described in the PRD.
-This is **not** a full Laravel project — it's the app-specific layer meant to be
-copied onto a fresh `laravel new` install, per your instructions.
+Laravel 12 + Inertia.js + React scaffold for a school management portal.
 
 ## 1. Setup
 
