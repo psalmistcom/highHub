@@ -9,7 +9,7 @@ enum RoleEnum: string
     case Student = 'student';
     case ParentGuardian = 'parent';
     case Bursar = 'bursar';
-    case LabAttendant = 'lab-attendant';
+    case LabAttendant = 'lab_attendant';
 
     public function label(): string
     {
@@ -23,15 +23,9 @@ enum RoleEnum: string
         };
     }
 
-    /** Roles that use the back-office (non-student/parent) shell */
-
+    /** Roles that use the back-office (non student/parent) shell. */
     public static function staff(): array
     {
-        return [
-            self::Admin->value,
-            self::Teacher->value,
-            self::Bursar->value,
-            self::LabAttendant->value,
-        ];
+        return [self::Admin->value, self::Teacher->value, self::Bursar->value, self::LabAttendant->value];
     }
 }
