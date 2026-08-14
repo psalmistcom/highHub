@@ -19,8 +19,16 @@ class AttendanceController extends Controller
     {
         $date = $request->string('date')->value() ?: now()->toDateString();
 
+        $class->load([
+            'students' => function ($query) {
+                $query->whereHas('user');
+            },
+            'students.user',
+            'subjects'
+        ]);
         return Inertia::render('Attendance/Register', [
-            'schoolClass' => $class->load('students.user', 'subjects'),
+
+            'schoolClass' => $class,
             'date' => $date,
             'subjectId' => $request->integer('subject_id') ?: null,
             'records' => $this->attendance->forClassOnDate($class, $date, $request->integer('subject_id') ?: null),

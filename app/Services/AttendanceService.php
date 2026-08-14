@@ -38,7 +38,8 @@ class AttendanceService
         return Attendance::query()
             ->where('school_class_id', $schoolClass->id)
             ->where('date', $date)
-            ->when($subjectId, fn ($q) => $q->where('subject_id', $subjectId))
+            ->when($subjectId, fn($q) => $q->where('subject_id', $subjectId))
+            ->whereHas('student.user')
             ->with('student.user')
             ->get();
     }

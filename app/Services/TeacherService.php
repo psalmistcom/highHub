@@ -12,8 +12,9 @@ class TeacherService
     public function paginate(?string $search = null, int $perPage = 15): LengthAwarePaginator
     {
         return TeacherProfile::query()
+            ->whereHas('user')
             ->with('user')
-            ->when($search, fn ($q) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")))
+            ->when($search, fn($q) => $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$search}%")))
             ->latest('id')
             ->paginate($perPage)
             ->withQueryString();
@@ -32,12 +33,12 @@ class TeacherService
             'name' => $data['name'] ?? null,
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
-        ], fn ($v) => ! is_null($v)));
+        ], fn($v) => ! is_null($v)));
 
         $teacher->update(array_filter([
             'subject_specialization' => $data['subject_specialization'] ?? null,
             'qualification' => $data['qualification'] ?? null,
-        ], fn ($v) => ! is_null($v)));
+        ], fn($v) => ! is_null($v)));
 
         return $teacher->fresh('user');
     }

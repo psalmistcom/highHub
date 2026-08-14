@@ -16,9 +16,12 @@ class FeeController extends Controller
 
     public function index(): Response
     {
+        $invoices = Invoice::query()
+            ->whereHas('student.user')
+            ->with('student.user', 'feeStructure')->latest()->paginate(15, ['*'], 'invoices_page');
         return Inertia::render('Fees/Index', [
             'feeStructures' => FeeStructure::with('schoolClass')->latest()->paginate(15),
-            'invoices' => Invoice::with('student.user', 'feeStructure')->latest()->paginate(15, ['*'], 'invoices_page'),
+            'invoices' => $invoices,
             'schoolClasses' => SchoolClass::orderBy('name')->get(['id', 'name']),
         ]);
     }

@@ -18,7 +18,7 @@ class SchoolClassController extends Controller
     {
         return Inertia::render('Classes/Index', [
             'classes' => $this->classes->paginate($request->string('search')->value() ?: null),
-            'teachers' => TeacherProfile::with('user')->get(['id', 'user_id']),
+            'teachers' => TeacherProfile::whereHas('user')->with('user')->get(['id', 'user_id']),
         ]);
     }
 

@@ -10,9 +10,13 @@ class SchoolClassService
     public function paginate(?string $search = null, int $perPage = 15): LengthAwarePaginator
     {
         return SchoolClass::query()
-            ->withCount('students')
+            ->withCount([
+                'students' => function ($query) {
+                    $query->whereHas('user');
+                }
+            ])
             ->with('classTeacher.user')
-            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate($perPage)
             ->withQueryString();
